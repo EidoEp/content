@@ -32,12 +32,11 @@ jobs:
       - name: Fetch upstream
         run: git fetch upstream master
 
-      - name: Fast-forward master to upstream/master
+      - name: Merge upstream/master into master
         run: |
-          if git merge-base --is-ancestor HEAD upstream/master; then
-            git merge --ff-only upstream/master
-            git push origin master
-          else
-            echo "Fork's master has diverged from upstream/master; manual intervention required."
-            exit 1
+          if git merge-base --is-ancestor upstream/master HEAD; then
+            echo "Already up to date with upstream/master."
+            exit 0
           fi
+          git merge --no-edit upstream/master
+          git push origin master
