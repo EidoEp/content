@@ -1,0 +1,43 @@
+name: Sync fork with upstream
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    # Only run on the fork, never on the upstream repo itself.
+    if: github.repository != 'demisto/content'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/demisto/content.git
+
+      - name: Fetch upstream
+        run: git fetch upstream master
+
+      - name: Fast-forward master to upstream/master
+        run: |
+          if git merge-base --is-ancestor HEAD upstream/master; then
+            git merge --ff-only upstream/master
+            git push origin master
+          else
+            echo "Fork's master has diverged from upstream/master; manual intervention required."
+            exit 1
+          fi
